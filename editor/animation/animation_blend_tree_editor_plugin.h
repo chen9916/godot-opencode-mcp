@@ -83,6 +83,7 @@ class AnimationNodeBlendTreeEditor : public AnimationTreeNodeEditorPlugin {
 		String type;
 		Ref<Script> script;
 		int input_port_count;
+		bool is_auto_global_script = false;
 		AddOption(const String &p_name = String(), const String &p_type = String(), int p_input_port_count = 0) :
 				name(p_name),
 				type(p_type),
@@ -93,6 +94,7 @@ class AnimationNodeBlendTreeEditor : public AnimationTreeNodeEditorPlugin {
 	Vector<AddOption> add_options;
 
 	void _add_node(int p_idx);
+	void _refresh_script_add_options();
 	void _update_options_menu(bool p_has_input_ports = false);
 
 	static AnimationNodeBlendTreeEditor *singleton;

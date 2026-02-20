@@ -76,14 +76,77 @@ void AnimationNodeBlendTreeEditor::remove_custom_type(const Ref<Script> &p_scrip
 	_update_options_menu();
 }
 
+void AnimationNodeBlendTreeEditor::_refresh_script_add_options() {
+	for (int i = add_options.size() - 1; i >= 0; i--) {
+		if (add_options[i].is_auto_global_script) {
+			add_options.remove_at(i);
+		}
+	}
+
+	LocalVector<StringName> global_classes;
+	ScriptServer::get_global_class_list(global_classes);
+	for (const StringName &class_name : global_classes) {
+		if (!EditorNode::get_singleton()->get_editor_data().script_class_is_parent(class_name, "AnimationNode")) {
+			continue;
+		}
+
+		const String class_path = ScriptServer::get_global_class_path(class_name);
+		Ref<Script> script = ResourceLoader::load(class_path, "Script", ResourceFormatLoader::CACHE_MODE_REUSE);
+		if (script.is_null()) {
+			continue;
+		}
+
+		bool duplicate = false;
+		for (const AddOption &option : add_options) {
+			if (option.script == script) {
+				duplicate = true;
+				break;
+			}
+		}
+		if (duplicate) {
+			continue;
+		}
+
+		AddOption option;
+		option.name = String(class_name);
+		option.script = script;
+		option.is_auto_global_script = true;
+		option.input_port_count = 1;
+		add_options.push_back(option);
+	}
+}
+
 void AnimationNodeBlendTreeEditor::_update_options_menu(bool p_has_input_ports) {
+	_refresh_script_add_options();
+
 	add_node->get_popup()->clear();
 	add_node->get_popup()->reset_size();
+	Vector<int> script_option_indices;
 	for (int i = 0; i < add_options.size(); i++) {
 		if (p_has_input_ports && add_options[i].input_port_count == 0) {
 			continue;
 		}
+		if (add_options[i].is_auto_global_script) {
+			script_option_indices.push_back(i);
+			continue;
+		}
 		add_node->get_popup()->add_item(add_options[i].name, i);
+	}
+
+	for (int i = 0; i < script_option_indices.size(); i++) {
+		for (int j = i + 1; j < script_option_indices.size(); j++) {
+			if (add_options[script_option_indices[j]].name.naturalnocasecmp_to(add_options[script_option_indices[i]].name) < 0) {
+				SWAP(script_option_indices.write[i], script_option_indices.write[j]);
+			}
+		}
+	}
+
+	if (!script_option_indices.is_empty()) {
+		add_node->get_popup()->add_separator(TTR("Script Nodes"));
+		for (int i = 0; i < script_option_indices.size(); i++) {
+			const int option_idx = script_option_indices[i];
+			add_node->get_popup()->add_item(add_options[option_idx].name, option_idx);
+		}
 	}
 
 	Ref<AnimationNode> clipb = EditorSettings::get_singleton()->get_resource_clipboard();
