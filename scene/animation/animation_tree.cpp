@@ -499,6 +499,9 @@ void AnimationNode::blend_animation_ex(const StringName &p_animation, double p_t
 double AnimationNode::blend_node_ex(const StringName &p_sub_path, Ref<AnimationNode> p_node, double p_time, bool p_seek, bool p_is_external_seeking, real_t p_blend, FilterAction p_filter, bool p_sync, bool p_test_only) {
 	AnimationMixer::PlaybackInfo info;
 	info.time = p_time;
+	if (!p_seek) {
+		info.delta = p_time - get_node_time_info().position;
+	}
 	info.seeked = p_seek;
 	info.is_external_seeking = p_is_external_seeking;
 	info.weight = p_blend;
@@ -509,6 +512,9 @@ double AnimationNode::blend_node_ex(const StringName &p_sub_path, Ref<AnimationN
 double AnimationNode::blend_input_ex(int p_input, double p_time, bool p_seek, bool p_is_external_seeking, real_t p_blend, FilterAction p_filter, bool p_sync, bool p_test_only) {
 	AnimationMixer::PlaybackInfo info;
 	info.time = p_time;
+	if (!p_seek) {
+		info.delta = p_time - get_node_time_info().position;
+	}
 	info.seeked = p_seek;
 	info.is_external_seeking = p_is_external_seeking;
 	info.weight = p_blend;
