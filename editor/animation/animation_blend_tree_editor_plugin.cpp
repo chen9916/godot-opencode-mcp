@@ -32,6 +32,7 @@
 
 #include "core/config/project_settings.h"
 #include "core/io/resource_loader.h"
+#include "scene/animation/animation_filter.h"
 #include "core/templates/rb_set.h"
 #include "editor/editor_node.h"
 #include "editor/editor_string_names.h"
@@ -42,6 +43,7 @@
 #include "editor/settings/editor_settings.h"
 #include "editor/themes/editor_scale.h"
 #include "scene/3d/skeleton_3d.h"
+#include "editor/inspector/editor_resource_picker.h"
 #include "scene/gui/check_box.h"
 #include "scene/gui/grid_container.h"
 #include "scene/gui/line_edit.h"
@@ -706,12 +708,23 @@ void AnimationNodeBlendTreeEditor::_open_in_editor(const String &p_which) {
 	AnimationTreeEditor::get_singleton()->enter_editor(p_which);
 }
 
-void AnimationNodeBlendTreeEditor::_filter_toggled() {
+void AnimationNodeBlendTreeEditor::_filter_resource_changed(const Ref<Resource> &p_resource) {
+	if (_filter_edit.is_null()) {
+		return;
+	}
+
+	Ref<AnimationFilter> new_filter = p_resource;
+	Ref<AnimationFilter> old_filter = _filter_edit->get_filter_resource();
+
+	if (new_filter == old_filter) {
+		return;
+	}
+
 	updating = true;
 	EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
-	undo_redo->create_action(TTR("Toggle Filter On/Off"));
-	undo_redo->add_do_method(_filter_edit.ptr(), "set_filter_enabled", filter_enabled->is_pressed());
-	undo_redo->add_undo_method(_filter_edit.ptr(), "set_filter_enabled", _filter_edit->is_filter_enabled());
+	undo_redo->create_action(TTR("Set Filter Resource"));
+	undo_redo->add_do_method(_filter_edit.ptr(), "set_filter_resource", new_filter);
+	undo_redo->add_undo_method(_filter_edit.ptr(), "set_filter_resource", old_filter);
 	undo_redo->add_do_method(this, "_update_filters", _filter_edit);
 	undo_redo->add_undo_method(this, "_update_filters", _filter_edit);
 	undo_redo->commit_action();
@@ -841,6 +854,42 @@ void AnimationNodeBlendTreeEditor::_filter_clear_selection_recursive(EditorUndoR
 	}
 }
 
+void AnimationNodeBlendTreeEditor::_filter_dialog_confirmed() {
+	if (_filter_edit.is_null() || !_filter_edit->has_filter()) {
+		return;
+	}
+
+	Ref<AnimationFilter> res = _filter_edit->get_filter_resource();
+	bool created = false;
+	if (res.is_null()) {
+		res.instantiate();
+		created = true;
+	}
+
+	TypedArray<NodePath> old_paths = res->get_paths();
+	Array current_filters = _filter_edit->call("_get_filters");
+
+	EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
+	undo_redo->create_action(TTR("Save Filter to Resource"));
+
+	if (created) {
+		undo_redo->add_do_method(_filter_edit.ptr(), "set_filter_resource", res);
+		undo_redo->add_undo_method(_filter_edit.ptr(), "set_filter_resource", Ref<AnimationFilter>());
+	}
+
+	undo_redo->add_do_method(res.ptr(), "clear");
+	for (int i = 0; i < current_filters.size(); i++) {
+		undo_redo->add_do_method(res.ptr(), "add_path", NodePath(String(current_filters[i])));
+	}
+
+	undo_redo->add_undo_method(res.ptr(), "clear");
+	for (int i = 0; i < old_paths.size(); i++) {
+		undo_redo->add_undo_method(res.ptr(), "add_path", old_paths[i]);
+	}
+
+	undo_redo->commit_action();
+}
+
 bool AnimationNodeBlendTreeEditor::_update_filters(const Ref<AnimationNode> &anode) {
 	if (updating || _filter_edit != anode) {
 		return false;
@@ -893,7 +942,7 @@ bool AnimationNodeBlendTreeEditor::_update_filters(const Ref<AnimationNode> &ano
 		}
 	}
 
-	filter_enabled->set_pressed(anode->is_filter_enabled());
+	filter_resource_picker->set_edited_resource(anode->get_filter_resource());
 	filters->clear();
 	TreeItem *root = filters->create_item();
 
@@ -1026,7 +1075,7 @@ void AnimationNodeBlendTreeEditor::_inspect_filters(const String &p_which) {
 		filter_dialog->set_title(TTR("Edit Filtered Tracks:"));
 	}
 
-	filter_enabled->set_disabled(read_only);
+	filter_resource_picker->set_editable(!read_only);
 
 	Ref<AnimationNode> anode = blend_tree->get_node(p_which);
 	ERR_FAIL_COND(anode.is_null());
@@ -1341,6 +1390,8 @@ AnimationNodeBlendTreeEditor::AnimationNodeBlendTreeEditor() {
 	filter_dialog = memnew(AcceptDialog);
 	add_child(filter_dialog);
 	filter_dialog->set_title(TTR("Edit Filtered Tracks:"));
+	filter_dialog->set_exclusive(false);
+	filter_dialog->connect("confirmed", callable_mp(this, &AnimationNodeBlendTreeEditor::_filter_dialog_confirmed));
 
 	VBoxContainer *filter_vbox = memnew(VBoxContainer);
 	filter_dialog->add_child(filter_vbox);
@@ -1348,10 +1399,11 @@ AnimationNodeBlendTreeEditor::AnimationNodeBlendTreeEditor() {
 	HBoxContainer *filter_hbox = memnew(HBoxContainer);
 	filter_vbox->add_child(filter_hbox);
 
-	filter_enabled = memnew(CheckBox);
-	filter_enabled->set_text(TTR("Enable Filtering"));
-	filter_enabled->connect(SceneStringName(pressed), callable_mp(this, &AnimationNodeBlendTreeEditor::_filter_toggled));
-	filter_hbox->add_child(filter_enabled);
+	filter_resource_picker = memnew(EditorResourcePicker);
+	filter_resource_picker->set_base_type("AnimationFilter");
+	filter_resource_picker->set_h_size_flags(SIZE_EXPAND_FILL);
+	filter_resource_picker->connect("resource_changed", callable_mp(this, &AnimationNodeBlendTreeEditor::_filter_resource_changed));
+	filter_hbox->add_child(filter_resource_picker);
 
 	filter_fill_selection = memnew(Button);
 	filter_fill_selection->set_text(TTR("Fill Selected Children"));

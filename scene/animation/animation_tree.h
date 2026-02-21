@@ -35,6 +35,7 @@
 
 #define HUGE_LENGTH 31540000 // 31540000 seconds mean 1 year... is it too long? It must be longer than any Animation length and Transition xfade time to prevent time inversion for AnimationNodeStateMachine.
 
+class AnimationFilter;
 class AnimationNodeBlendTree;
 class AnimationNodeStartState;
 class AnimationNodeEndState;
@@ -61,6 +62,10 @@ public:
 	LocalVector<Input> inputs;
 	AHashMap<NodePath, bool> filter;
 	bool filter_enabled = false;
+	Ref<AnimationFilter> filter_resource;
+
+	void _sync_filter_from_resource();
+	void _on_filter_resource_changed();
 
 	// To propagate information from upstream for use in estimation of playback progress.
 	// These values must be taken from the result of blend_node() or blend_input() and must be essentially read-only.
@@ -221,6 +226,9 @@ public:
 
 	void set_filter_enabled(bool p_enable);
 	bool is_filter_enabled() const;
+
+	void set_filter_resource(const Ref<AnimationFilter> &p_resource);
+	Ref<AnimationFilter> get_filter_resource() const;
 
 	void set_deletable(bool p_closable);
 	bool is_deletable() const;

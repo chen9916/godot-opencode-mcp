@@ -32,6 +32,7 @@
 #include "animation_tree.compat.inc"
 
 #include "animation_blend_tree.h"
+#include "scene/animation/animation_filter.h"
 #include "scene/animation/animation_player.h"
 
 void AnimationNode::get_parameter_list(List<PropertyInfo> *r_list) const {
@@ -415,6 +416,40 @@ bool AnimationNode::is_filter_enabled() const {
 	return filter_enabled;
 }
 
+void AnimationNode::set_filter_resource(const Ref<AnimationFilter> &p_resource) {
+	if (filter_resource == p_resource) {
+		return;
+	}
+	if (filter_resource.is_valid()) {
+		filter_resource->disconnect(CoreStringName(changed), callable_mp(this, &AnimationNode::_on_filter_resource_changed));
+	}
+	filter_resource = p_resource;
+	if (filter_resource.is_valid()) {
+		filter_resource->connect(CoreStringName(changed), callable_mp(this, &AnimationNode::_on_filter_resource_changed));
+	}
+	_sync_filter_from_resource();
+}
+
+Ref<AnimationFilter> AnimationNode::get_filter_resource() const {
+	return filter_resource;
+}
+
+void AnimationNode::_on_filter_resource_changed() {
+	_sync_filter_from_resource();
+}
+
+void AnimationNode::_sync_filter_from_resource() {
+	filter.clear();
+	if (!filter_resource.is_valid()) {
+		filter_enabled = false;
+		return;
+	}
+	filter_enabled = true;
+	for (const KeyValue<NodePath, bool> &E : filter_resource->get_filtered_paths()) {
+		filter[E.key] = true;
+	}
+}
+
 void AnimationNode::set_deletable(bool p_closable) {
 	closable = p_closable;
 }
@@ -462,7 +497,7 @@ void AnimationNode::_set_filters(const Array &p_filters) {
 }
 
 void AnimationNode::_validate_property(PropertyInfo &p_property) const {
-	if (!has_filter() && (p_property.name == "filter_enabled" || p_property.name == "filters")) {
+	if (!has_filter() && (p_property.name == "filter_enabled" || p_property.name == "filters" || p_property.name == "filter_resource")) {
 		p_property.usage = PROPERTY_USAGE_NONE;
 	}
 }
@@ -564,6 +599,9 @@ void AnimationNode::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_filter_enabled", "enable"), &AnimationNode::set_filter_enabled);
 	ClassDB::bind_method(D_METHOD("is_filter_enabled"), &AnimationNode::is_filter_enabled);
 
+	ClassDB::bind_method(D_METHOD("set_filter_resource", "filter"), &AnimationNode::set_filter_resource);
+	ClassDB::bind_method(D_METHOD("get_filter_resource"), &AnimationNode::get_filter_resource);
+
 	ClassDB::bind_method(D_METHOD("get_processing_animation_tree_instance_id"), &AnimationNode::get_processing_animation_tree_instance_id);
 
 	ClassDB::bind_method(D_METHOD("is_process_testing"), &AnimationNode::is_process_testing);
@@ -580,6 +618,7 @@ void AnimationNode::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "filter_enabled", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR), "set_filter_enabled", "is_filter_enabled");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "filters", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR | PROPERTY_USAGE_INTERNAL), "_set_filters", "_get_filters");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "filter_resource", PROPERTY_HINT_RESOURCE_TYPE, "AnimationFilter"), "set_filter_resource", "get_filter_resource");
 
 	GDVIRTUAL_BIND(_get_child_nodes);
 	GDVIRTUAL_BIND(_get_parameter_list);
