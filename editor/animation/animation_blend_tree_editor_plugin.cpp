@@ -729,6 +729,8 @@ void AnimationNodeBlendTreeEditor::_filter_resource_changed(const Ref<Resource> 
 	undo_redo->add_undo_method(this, "_update_filters", _filter_edit);
 	undo_redo->commit_action();
 	updating = false;
+
+	callable_mp((Window *)filter_dialog, &Window::grab_focus).call_deferred();
 }
 
 void AnimationNodeBlendTreeEditor::_filter_edited() {
