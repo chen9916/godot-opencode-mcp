@@ -5,6 +5,7 @@
 	</brief_description>
 	<description>
 		Contains multiple [AnimationRootNode]s representing animation states, connected in a graph. State transitions can be configured to happen automatically or via code, using a shortest-path algorithm. Retrieve the [AnimationNodeStateMachinePlayback] object from the [AnimationTree] node to control it programmatically.
+		When editing this node in the [AnimationTree] state machine editor, the default mode shortcuts are [code]Q[/code] (Select), [code]W[/code] (Create), and [code]E[/code] (Connect). Deleting the current selection uses the [code]animation_editor/delete_selection[/code] editor shortcut.
 		[codeblocks]
 		[gdscript]
 		var state_machine = $AnimationTree.get("parameters/playback")

@@ -42,6 +42,7 @@
 
 class AcceptDialog;
 class CheckBox;
+class EditorResourcePicker;
 class ProgressBar;
 class EditorFileDialog;
 class EditorProperty;
@@ -66,7 +67,7 @@ class AnimationNodeBlendTreeEditor : public AnimationTreeNodeEditorPlugin {
 
 	AcceptDialog *filter_dialog = nullptr;
 	Tree *filters = nullptr;
-	CheckBox *filter_enabled = nullptr;
+	EditorResourcePicker *filter_resource_picker = nullptr;
 	Button *filter_fill_selection = nullptr;
 	Button *filter_invert_selection = nullptr;
 	Button *filter_clear_selection = nullptr;
@@ -83,6 +84,7 @@ class AnimationNodeBlendTreeEditor : public AnimationTreeNodeEditorPlugin {
 		String type;
 		Ref<Script> script;
 		int input_port_count;
+		bool is_auto_global_script = false;
 		AddOption(const String &p_name = String(), const String &p_type = String(), int p_input_port_count = 0) :
 				name(p_name),
 				type(p_type),
@@ -93,6 +95,7 @@ class AnimationNodeBlendTreeEditor : public AnimationTreeNodeEditorPlugin {
 	Vector<AddOption> add_options;
 
 	void _add_node(int p_idx);
+	void _refresh_script_add_options();
 	void _update_options_menu(bool p_has_input_ports = false);
 
 	static AnimationNodeBlendTreeEditor *singleton;
@@ -120,13 +123,14 @@ class AnimationNodeBlendTreeEditor : public AnimationTreeNodeEditorPlugin {
 	bool _update_filters(const Ref<AnimationNode> &anode);
 	void _inspect_filters(const String &p_which);
 	void _filter_edited();
-	void _filter_toggled();
+	void _filter_resource_changed(const Ref<Resource> &p_resource);
 	void _filter_fill_selection();
 	void _filter_invert_selection();
 	void _filter_clear_selection();
 	void _filter_fill_selection_recursive(EditorUndoRedoManager *p_undo_redo, TreeItem *p_item, bool p_parent_filtered);
 	void _filter_invert_selection_recursive(EditorUndoRedoManager *p_undo_redo, TreeItem *p_item);
 	void _filter_clear_selection_recursive(EditorUndoRedoManager *p_undo_redo, TreeItem *p_item);
+	void _filter_dialog_confirmed();
 	Ref<AnimationNode> _filter_edit;
 
 	void _popup(bool p_has_input_ports, const Vector2 &p_node_position);

@@ -32,6 +32,7 @@
 
 #include "core/config/project_settings.h"
 #include "core/io/resource_loader.h"
+#include "scene/animation/animation_filter.h"
 #include "core/templates/rb_set.h"
 #include "editor/editor_node.h"
 #include "editor/editor_string_names.h"
@@ -42,6 +43,7 @@
 #include "editor/settings/editor_settings.h"
 #include "editor/themes/editor_scale.h"
 #include "scene/3d/skeleton_3d.h"
+#include "editor/inspector/editor_resource_picker.h"
 #include "scene/gui/check_box.h"
 #include "scene/gui/grid_container.h"
 #include "scene/gui/line_edit.h"
@@ -76,14 +78,77 @@ void AnimationNodeBlendTreeEditor::remove_custom_type(const Ref<Script> &p_scrip
 	_update_options_menu();
 }
 
+void AnimationNodeBlendTreeEditor::_refresh_script_add_options() {
+	for (int i = add_options.size() - 1; i >= 0; i--) {
+		if (add_options[i].is_auto_global_script) {
+			add_options.remove_at(i);
+		}
+	}
+
+	LocalVector<StringName> global_classes;
+	ScriptServer::get_global_class_list(global_classes);
+	for (const StringName &class_name : global_classes) {
+		if (!EditorNode::get_singleton()->get_editor_data().script_class_is_parent(class_name, "AnimationNode")) {
+			continue;
+		}
+
+		const String class_path = ScriptServer::get_global_class_path(class_name);
+		Ref<Script> script = ResourceLoader::load(class_path, "Script", ResourceFormatLoader::CACHE_MODE_REUSE);
+		if (script.is_null()) {
+			continue;
+		}
+
+		bool duplicate = false;
+		for (const AddOption &option : add_options) {
+			if (option.script == script) {
+				duplicate = true;
+				break;
+			}
+		}
+		if (duplicate) {
+			continue;
+		}
+
+		AddOption option;
+		option.name = String(class_name);
+		option.script = script;
+		option.is_auto_global_script = true;
+		option.input_port_count = 1;
+		add_options.push_back(option);
+	}
+}
+
 void AnimationNodeBlendTreeEditor::_update_options_menu(bool p_has_input_ports) {
+	_refresh_script_add_options();
+
 	add_node->get_popup()->clear();
 	add_node->get_popup()->reset_size();
+	Vector<int> script_option_indices;
 	for (int i = 0; i < add_options.size(); i++) {
 		if (p_has_input_ports && add_options[i].input_port_count == 0) {
 			continue;
 		}
+		if (add_options[i].is_auto_global_script) {
+			script_option_indices.push_back(i);
+			continue;
+		}
 		add_node->get_popup()->add_item(add_options[i].name, i);
+	}
+
+	for (int i = 0; i < script_option_indices.size(); i++) {
+		for (int j = i + 1; j < script_option_indices.size(); j++) {
+			if (add_options[script_option_indices[j]].name.naturalnocasecmp_to(add_options[script_option_indices[i]].name) < 0) {
+				SWAP(script_option_indices.write[i], script_option_indices.write[j]);
+			}
+		}
+	}
+
+	if (!script_option_indices.is_empty()) {
+		add_node->get_popup()->add_separator(TTR("Script Nodes"));
+		for (int i = 0; i < script_option_indices.size(); i++) {
+			const int option_idx = script_option_indices[i];
+			add_node->get_popup()->add_item(add_options[option_idx].name, option_idx);
+		}
 	}
 
 	Ref<AnimationNode> clipb = EditorSettings::get_singleton()->get_resource_clipboard();
@@ -643,16 +708,29 @@ void AnimationNodeBlendTreeEditor::_open_in_editor(const String &p_which) {
 	AnimationTreeEditor::get_singleton()->enter_editor(p_which);
 }
 
-void AnimationNodeBlendTreeEditor::_filter_toggled() {
+void AnimationNodeBlendTreeEditor::_filter_resource_changed(const Ref<Resource> &p_resource) {
+	if (_filter_edit.is_null()) {
+		return;
+	}
+
+	Ref<AnimationFilter> new_filter = p_resource;
+	Ref<AnimationFilter> old_filter = _filter_edit->get_filter_resource();
+
+	if (new_filter == old_filter) {
+		return;
+	}
+
 	updating = true;
 	EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
-	undo_redo->create_action(TTR("Toggle Filter On/Off"));
-	undo_redo->add_do_method(_filter_edit.ptr(), "set_filter_enabled", filter_enabled->is_pressed());
-	undo_redo->add_undo_method(_filter_edit.ptr(), "set_filter_enabled", _filter_edit->is_filter_enabled());
+	undo_redo->create_action(TTR("Set Filter Resource"));
+	undo_redo->add_do_method(_filter_edit.ptr(), "set_filter_resource", new_filter);
+	undo_redo->add_undo_method(_filter_edit.ptr(), "set_filter_resource", old_filter);
 	undo_redo->add_do_method(this, "_update_filters", _filter_edit);
 	undo_redo->add_undo_method(this, "_update_filters", _filter_edit);
 	undo_redo->commit_action();
 	updating = false;
+
+	callable_mp((Window *)filter_dialog, &Window::grab_focus).call_deferred();
 }
 
 void AnimationNodeBlendTreeEditor::_filter_edited() {
@@ -778,6 +856,42 @@ void AnimationNodeBlendTreeEditor::_filter_clear_selection_recursive(EditorUndoR
 	}
 }
 
+void AnimationNodeBlendTreeEditor::_filter_dialog_confirmed() {
+	if (_filter_edit.is_null() || !_filter_edit->has_filter()) {
+		return;
+	}
+
+	Ref<AnimationFilter> res = _filter_edit->get_filter_resource();
+	bool created = false;
+	if (res.is_null()) {
+		res.instantiate();
+		created = true;
+	}
+
+	TypedArray<NodePath> old_paths = res->get_paths();
+	Array current_filters = _filter_edit->call("_get_filters");
+
+	EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
+	undo_redo->create_action(TTR("Save Filter to Resource"));
+
+	if (created) {
+		undo_redo->add_do_method(_filter_edit.ptr(), "set_filter_resource", res);
+		undo_redo->add_undo_method(_filter_edit.ptr(), "set_filter_resource", Ref<AnimationFilter>());
+	}
+
+	undo_redo->add_do_method(res.ptr(), "clear");
+	for (int i = 0; i < current_filters.size(); i++) {
+		undo_redo->add_do_method(res.ptr(), "add_path", NodePath(String(current_filters[i])));
+	}
+
+	undo_redo->add_undo_method(res.ptr(), "clear");
+	for (int i = 0; i < old_paths.size(); i++) {
+		undo_redo->add_undo_method(res.ptr(), "add_path", old_paths[i]);
+	}
+
+	undo_redo->commit_action();
+}
+
 bool AnimationNodeBlendTreeEditor::_update_filters(const Ref<AnimationNode> &anode) {
 	if (updating || _filter_edit != anode) {
 		return false;
@@ -830,7 +944,7 @@ bool AnimationNodeBlendTreeEditor::_update_filters(const Ref<AnimationNode> &ano
 		}
 	}
 
-	filter_enabled->set_pressed(anode->is_filter_enabled());
+	filter_resource_picker->set_edited_resource(anode->get_filter_resource());
 	filters->clear();
 	TreeItem *root = filters->create_item();
 
@@ -963,7 +1077,7 @@ void AnimationNodeBlendTreeEditor::_inspect_filters(const String &p_which) {
 		filter_dialog->set_title(TTR("Edit Filtered Tracks:"));
 	}
 
-	filter_enabled->set_disabled(read_only);
+	filter_resource_picker->set_editable(!read_only);
 
 	Ref<AnimationNode> anode = blend_tree->get_node(p_which);
 	ERR_FAIL_COND(anode.is_null());
@@ -1278,6 +1392,8 @@ AnimationNodeBlendTreeEditor::AnimationNodeBlendTreeEditor() {
 	filter_dialog = memnew(AcceptDialog);
 	add_child(filter_dialog);
 	filter_dialog->set_title(TTR("Edit Filtered Tracks:"));
+	filter_dialog->set_exclusive(false);
+	filter_dialog->connect("confirmed", callable_mp(this, &AnimationNodeBlendTreeEditor::_filter_dialog_confirmed));
 
 	VBoxContainer *filter_vbox = memnew(VBoxContainer);
 	filter_dialog->add_child(filter_vbox);
@@ -1285,10 +1401,11 @@ AnimationNodeBlendTreeEditor::AnimationNodeBlendTreeEditor() {
 	HBoxContainer *filter_hbox = memnew(HBoxContainer);
 	filter_vbox->add_child(filter_hbox);
 
-	filter_enabled = memnew(CheckBox);
-	filter_enabled->set_text(TTR("Enable Filtering"));
-	filter_enabled->connect(SceneStringName(pressed), callable_mp(this, &AnimationNodeBlendTreeEditor::_filter_toggled));
-	filter_hbox->add_child(filter_enabled);
+	filter_resource_picker = memnew(EditorResourcePicker);
+	filter_resource_picker->set_base_type("AnimationFilter");
+	filter_resource_picker->set_h_size_flags(SIZE_EXPAND_FILL);
+	filter_resource_picker->connect("resource_changed", callable_mp(this, &AnimationNodeBlendTreeEditor::_filter_resource_changed));
+	filter_hbox->add_child(filter_resource_picker);
 
 	filter_fill_selection = memnew(Button);
 	filter_fill_selection->set_text(TTR("Fill Selected Children"));

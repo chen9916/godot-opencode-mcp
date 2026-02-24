@@ -80,6 +80,40 @@ void AnimationNodeStateMachineEditor::edit(const Ref<AnimationNode> &p_node) {
 	tool_connect->set_disabled(read_only);
 }
 
+void AnimationNodeStateMachineEditor::shortcut_input(const Ref<InputEvent> &p_event) {
+	ERR_FAIL_COND(p_event.is_null());
+
+	Ref<InputEventKey> k = p_event;
+	if (!is_visible_in_tree() || !k.is_valid() || !k->is_pressed() || k->is_echo()) {
+		return;
+	}
+
+	if (name_edit_popup->is_visible()) {
+		return;
+	}
+
+	if (ED_IS_SHORTCUT("animation_state_machine_editor/select_mode", p_event)) {
+		tool_select->set_pressed(true);
+		_update_mode();
+		accept_event();
+	} else if (!read_only && ED_IS_SHORTCUT("animation_state_machine_editor/create_mode", p_event)) {
+		tool_create->set_pressed(true);
+		_update_mode();
+		accept_event();
+	} else if (!read_only && ED_IS_SHORTCUT("animation_state_machine_editor/connect_mode", p_event)) {
+		tool_connect->set_pressed(true);
+		_update_mode();
+		accept_event();
+	} else if (tool_select->is_pressed() && ED_IS_SHORTCUT("animation_editor/delete_selection", p_event)) {
+		if (selected_node != StringName() || !selected_nodes.is_empty() || selected_transition_to != StringName() || selected_transition_from != StringName()) {
+			if (!read_only) {
+				_erase_selected();
+			}
+			accept_event();
+		}
+	}
+}
+
 String AnimationNodeStateMachineEditor::_get_root_playback_path(String &r_node_directory) {
 	AnimationTree *tree = AnimationTreeEditor::get_singleton()->get_animation_tree();
 	Vector<String> edited_path = AnimationTreeEditor::get_singleton()->get_edited_path();
@@ -215,16 +249,6 @@ void AnimationNodeStateMachineEditor::_state_machine_gui_input(const Ref<InputEv
 	Ref<AnimationNodeStateMachinePlayback> playback = tree->get(_get_root_playback_path(node_directory));
 	if (playback.is_null()) {
 		return;
-	}
-
-	Ref<InputEventKey> k = p_event;
-	if (tool_select->is_pressed() && k.is_valid() && k->is_pressed() && k->get_keycode() == Key::KEY_DELETE && !k->is_echo()) {
-		if (selected_node != StringName() || !selected_nodes.is_empty() || selected_transition_to != StringName() || selected_transition_from != StringName()) {
-			if (!read_only) {
-				_erase_selected();
-			}
-			accept_event();
-		}
 	}
 
 	Ref<InputEventMouseButton> mb = p_event;
@@ -2063,6 +2087,11 @@ AnimationNodeStateMachineEditor *AnimationNodeStateMachineEditor::singleton = nu
 
 AnimationNodeStateMachineEditor::AnimationNodeStateMachineEditor() {
 	singleton = this;
+	set_process_shortcut_input(true);
+
+	ED_SHORTCUT("animation_state_machine_editor/select_mode", TTRC("Select Mode"), Key::Q);
+	ED_SHORTCUT("animation_state_machine_editor/create_mode", TTRC("Create Mode"), Key::W);
+	ED_SHORTCUT("animation_state_machine_editor/connect_mode", TTRC("Connect Mode"), Key::E);
 
 	HBoxContainer *top_hb = memnew(HBoxContainer);
 	add_child(top_hb);
@@ -2076,7 +2105,7 @@ AnimationNodeStateMachineEditor::AnimationNodeStateMachineEditor() {
 	tool_select->set_toggle_mode(true);
 	tool_select->set_button_group(bg);
 	tool_select->set_pressed(true);
-	tool_select->set_tooltip_text(TTR("Select and move nodes.\nRMB: Add node at position clicked.\nShift+LMB+Drag: Connects the selected node with another node or creates a new node if you select an area without nodes."));
+	tool_select->set_tooltip_text(TTR("Select and move nodes.\nRMB: Add node at position clicked.\nShift+LMB+Drag: Connects the selected node with another node or creates a new node if you select an area without nodes.") + " (" + ED_GET_SHORTCUT("animation_state_machine_editor/select_mode")->get_as_text() + ")");
 	tool_select->set_accessibility_name(TTRC("Select and move nodes."));
 	tool_select->connect(SceneStringName(pressed), callable_mp(this, &AnimationNodeStateMachineEditor::_update_mode), CONNECT_DEFERRED);
 
@@ -2085,7 +2114,7 @@ AnimationNodeStateMachineEditor::AnimationNodeStateMachineEditor() {
 	top_hb->add_child(tool_create);
 	tool_create->set_toggle_mode(true);
 	tool_create->set_button_group(bg);
-	tool_create->set_tooltip_text(TTR("Create new nodes."));
+	tool_create->set_tooltip_text(TTR("Create new nodes.") + " (" + ED_GET_SHORTCUT("animation_state_machine_editor/create_mode")->get_as_text() + ")");
 	tool_create->connect(SceneStringName(pressed), callable_mp(this, &AnimationNodeStateMachineEditor::_update_mode), CONNECT_DEFERRED);
 
 	tool_connect = memnew(Button);
@@ -2093,7 +2122,7 @@ AnimationNodeStateMachineEditor::AnimationNodeStateMachineEditor() {
 	top_hb->add_child(tool_connect);
 	tool_connect->set_toggle_mode(true);
 	tool_connect->set_button_group(bg);
-	tool_connect->set_tooltip_text(TTR("Connect nodes."));
+	tool_connect->set_tooltip_text(TTR("Connect nodes.") + " (" + ED_GET_SHORTCUT("animation_state_machine_editor/connect_mode")->get_as_text() + ")");
 	tool_connect->connect(SceneStringName(pressed), callable_mp(this, &AnimationNodeStateMachineEditor::_update_mode), CONNECT_DEFERRED);
 
 	// Context-sensitive selection tools:

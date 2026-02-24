@@ -204,6 +204,7 @@ Table of contents:
 - Remove `is_penetrated` check from IK as role overlap/excessive behavior ([GH-113285](https://github.com/godotengine/godot/pull/113285)).
 - Add shortcuts in tooltips to the animation editor's play/pause buttons ([GH-113415](https://github.com/godotengine/godot/pull/113415)).
 - Use physical key shortcuts for the animation editor's play/pause buttons ([GH-113416](https://github.com/godotengine/godot/pull/113416)).
+- Add keyboard shortcuts for AnimationTree StateMachine editor modes (Select/Create/Connect) and use `animation_editor/delete_selection` for deleting selection.
 - Fix truncation of node name in bezier animation editor ([GH-113500](https://github.com/godotengine/godot/pull/113500)).
 - Fix Animation Editor erroring when animating SpriteAnimation3D `frame` but not `animation` ([GH-113786](https://github.com/godotengine/godot/pull/113786)).
 - Fix the clipping of keys when moving keys ([GH-113903](https://github.com/godotengine/godot/pull/113903)).

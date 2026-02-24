@@ -306,6 +306,7 @@ public:
 
 	virtual bool can_edit(const Ref<AnimationNode> &p_node) override;
 	virtual void edit(const Ref<AnimationNode> &p_node) override;
+	virtual void shortcut_input(const Ref<InputEvent> &p_event) override;
 
 	virtual CursorShape get_cursor_shape(const Point2 &p_pos) const override;
 	virtual String get_tooltip(const Point2 &p_pos) const override;
