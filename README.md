@@ -10,7 +10,16 @@ It includes:
 
 ## Quick setup
 
-1. Build Godot editor from this fork.
+1. Build Godot editor from this fork (run from repo root):
+
+```bash
+python -m pip install "scons>=4.0"
+scons platform=windows target=editor dev_mode=yes
+```
+
+For other platforms, swap `platform=windows` for `linuxbsd` or `macos`.
+Built editor binaries are written to `bin/`.
+
 2. Build the bridge package:
 
 ```bash
