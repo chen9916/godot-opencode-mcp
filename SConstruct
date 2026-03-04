@@ -656,6 +656,12 @@ if env["build_profile"] != "":
         print_error(f'Feature build profile not found at: "{env["build_profile"]}"')
         Exit(255)
 
+# OpenCode MCP LSP relies on GDScript internals. Keep the module enabled for
+# editor builds even when a build profile or command line disables it.
+if env.editor_build and not env["module_gdscript_enabled"]:
+    print_warning("Forcing module_gdscript_enabled=yes for editor builds (required by OpenCode MCP lsp.query).")
+    env["module_gdscript_enabled"] = True
+
 # 'dev_mode' and 'production' are aliases to set default options if they haven't been
 # set manually by the user.
 if env["dev_mode"]:

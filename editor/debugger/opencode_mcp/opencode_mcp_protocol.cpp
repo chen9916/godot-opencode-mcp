@@ -55,6 +55,7 @@
 #include "editor/script/script_editor_base.h"
 #include "editor/script/script_editor_plugin.h"
 #include "editor/settings/project_settings_editor.h"
+#include "modules/modules_enabled.gen.h"
 #ifdef MODULE_GDSCRIPT_ENABLED
 #include "modules/gdscript/gdscript.h"
 #include "modules/gdscript/language_server/gdscript_extend_parser.h"
