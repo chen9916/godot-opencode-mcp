@@ -77,6 +77,7 @@ constexpr const char *SCRIPT_WORKSPACE_AUTO = "auto";
 constexpr const char *SCRIPT_WORKSPACE_SCENE_VIEW = "scene_view";
 constexpr const char *SCRIPT_WORKSPACE_SCRIPT_EDITOR = "script_editor";
 
+#ifdef MODULE_GDSCRIPT_ENABLED
 static bool _is_identifier_char(char32_t p_char) {
 	return p_char == '_' || (p_char >= '0' && p_char <= '9') || (p_char >= 'A' && p_char <= 'Z') || (p_char >= 'a' && p_char <= 'z');
 }
@@ -167,6 +168,7 @@ static String _lookup_result_type_to_string(ScriptLanguage::LookupResultType p_t
 
 	return "unknown";
 }
+#endif
 
 static ScriptLanguage *_find_script_language(const String &p_language_name) {
 	const String normalized = p_language_name.to_lower();
@@ -747,10 +749,6 @@ static bool _coerce_property_value(const Variant &p_existing_value, const Varian
 
 	r_error_message = _build_property_type_error(p_property_name, expected_type, p_requested_value.get_type(), p_expected_resource_type);
 	return false;
-}
-
-static bool _coerce_property_value(const Variant &p_existing_value, const Variant &p_requested_value, Variant &r_coerced_value, String &r_error_message) {
-	return _coerce_property_value(p_existing_value, p_requested_value, String(), String(), r_coerced_value, r_error_message);
 }
 
 static bool _serialize_resource_reference(const Variant &p_value, Variant &r_serialized) {
