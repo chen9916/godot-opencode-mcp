@@ -5,16 +5,18 @@
   "type": "module",
   "description": "OpenCode stdio MCP bridge for Godot JSON-RPC",
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
+    "portable": "node scripts/make_portable.mjs",
+    "setup": "node scripts/setup.mjs",
     "start": "node dist/main.js",
     "install-config": "node dist/main.js --install-opencode-config"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.11.2"
+    "@modelcontextprotocol/sdk": "^1.30.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

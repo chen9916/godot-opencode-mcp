@@ -387,12 +387,20 @@ Bridge package location in this repository:
 
 - `misc/opencode_mcp_bridge`
 
-Typical workflow:
+Typical workflow from a source checkout:
 
-1. Build the bridge package (`npm ci && npm run build` in `misc/opencode_mcp_bridge`).
-2. Install the OpenCode config entry:
-   - `node dist/main.js --install-opencode-config`
-   - Optional: add `--project-root "<path-to-godot-project>"` when OpenCode does not start from your project root.
-3. Restart OpenCode to discover the new MCP server entry.
+1. Run the setup command from the repository root:
+   - Windows PowerShell: `./setup-godot-opencode-mcp.ps1 --project-root "<path-to-godot-project>"`
+   - Windows cmd: `setup-godot-opencode-mcp.cmd --project-root "<path-to-godot-project>"`
+   - Unix shell: `./setup-godot-opencode-mcp.sh --project-root "<path-to-godot-project>"`
+2. Open the project in a Godot editor build that includes `editor/debugger/opencode_mcp`.
+3. Enable `Editor Settings -> network/opencode_mcp/enabled`.
+4. Restart OpenCode to discover the new MCP server entry.
+
+Portable bridge workflow:
+
+1. Build `misc/opencode_mcp_bridge/portable/godot-opencode-mcp-bridge` with `npm run portable`.
+2. Copy that folder to the target PC.
+3. Run `setup.ps1`, `setup.cmd`, or `setup.sh` from the copied folder with `--project-root "<path-to-godot-project>"`.
 
 The installed config entry key is `mcp.godot-opencode` and launches the bridge in stdio mode.
