@@ -13,6 +13,12 @@ This package exposes a local MCP stdio server for OpenCode and forwards tool cal
 
 - `godot.scene.get_active` -> `scene.get_active`
 - `godot.scene.get_tree` -> `scene.get_tree`
+- `godot.scene.list` -> `scene.list`
+- `godot.scene.open` -> `scene.open`
+- `godot.scene.create` -> `scene.create`
+- `godot.scene.instantiate` -> `scene.instantiate`
+- `godot.node.get_property` -> `node.get_property`
+- `godot.node.list_properties` -> `node.list_properties`
 - `godot.node.get_properties` -> `node.get_properties`
 - `godot.node.get_properties_batch` -> `node.get_properties_batch`
 - `godot.node.create` -> `node.create`
@@ -25,6 +31,9 @@ This package exposes a local MCP stdio server for OpenCode and forwards tool cal
 - `godot.node.reparent` -> `node.reparent`
 - `godot.node.set_properties` -> `node.set_properties`
 - `godot.node.set_properties_batch` -> `node.set_properties_batch`
+- `godot.node.find` -> `node.find`
+- `godot.node.get_groups` -> `node.get_groups`
+- `godot.node.set_groups` -> `node.set_groups`
 - `godot.script.get_active` -> `script.get_active`
 - `godot.script.get` -> `script.get`
 - `godot.script.apply_text_edits` -> `script.apply_text_edits`
@@ -32,8 +41,21 @@ This package exposes a local MCP stdio server for OpenCode and forwards tool cal
 - `godot.script.attach` -> `script.attach`
 - `godot.resource.save` -> `resource.save`
 - `godot.resource.reload` -> `resource.reload`
+- `godot.resource.get` -> `resource.get`
+- `godot.resource.list` -> `resource.list`
 - `godot.resource.create` -> `resource.create`
 - `godot.resource.set_properties` -> `resource.set_properties`
+- `godot.signal.list` -> `signal.list`
+- `godot.signal.get_connections` -> `signal.get_connections`
+- `godot.signal.connect` -> `signal.connect`
+- `godot.signal.disconnect` -> `signal.disconnect`
+- `godot.project.get_setting` -> `project.get_setting`
+- `godot.project.set_setting` -> `project.set_setting`
+- `godot.editor.get_errors` -> `editor.get_errors`
+- `godot.shader.get` -> `shader.get`
+- `godot.shader.edit` -> `shader.edit`
+- `godot.theme.get_overrides` -> `theme.get_overrides`
+- `godot.theme.set_overrides` -> `theme.set_overrides`
 - `godot.docs.class_lookup` -> `docs.class_lookup`
 - `godot.docs.member_lookup` -> `docs.member_lookup`
 - `godot.docs.search` -> `docs.search`
@@ -60,12 +82,15 @@ Docs tools read from Godot's runtime help database, so built-in and indexed scri
 
 ## Capability map
 
-- `read_scene`: `scene.get_active`, `scene.get_tree`, `node.get_properties`, `node.get_properties_batch`
-- `write_scene`: `node.create`, `node.create_batch`, `node.create_from_template`, `node.delete`, `node.delete_batch`, `node.duplicate`, `node.duplicate_batch`, `node.reparent`, `node.set_properties`, `node.set_properties_batch`, `script.attach`
-- `read_script`: `script.get_active`, `script.get`, `lsp.query`
-- `write_script`: `script.apply_text_edits`
+- `read_scene`: `scene.get_active`, `scene.get_tree`, `scene.list`, `node.get_property`, `node.list_properties`, `node.get_properties`, `node.get_properties_batch`, `node.find`, `node.get_groups`, `signal.list`, `signal.get_connections`, `theme.get_overrides`
+- `write_scene`: `scene.open`, `scene.create`, `scene.instantiate`, `node.create`, `node.create_batch`, `node.create_from_template`, `node.delete`, `node.delete_batch`, `node.duplicate`, `node.duplicate_batch`, `node.reparent`, `node.set_properties`, `node.set_properties_batch`, `node.set_groups`, `signal.connect`, `signal.disconnect`, `theme.set_overrides`, `script.attach`
+- `read_script`: `script.get_active`, `script.get`, `shader.get`, `lsp.query`
+- `write_script`: `script.apply_text_edits`, `shader.edit`
 - `save_resource`: `resource.save`, `resource.reload`
+- `read_resource`: `resource.get`, `resource.list`
 - `write_resource`: `resource.create`, `resource.set_properties`
+- `read_project`: `project.get_setting`, `editor.get_errors`
+- `write_project`: `project.set_setting`
 - `read_docs`: `docs.class_lookup`, `docs.member_lookup`, `docs.search`, `docs.inheritance`, `docs.examples`, `docs.list_versions`
 
 ## Prerequisites

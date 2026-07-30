@@ -37,6 +37,95 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
 		},
 	},
 	{
+		name: "godot.scene.list",
+		description: "List scene files under a project directory.",
+		method: "scene.list",
+		capability: "read_scene",
+		inputSchema: {
+			type: "object",
+			additionalProperties: false,
+			properties: {
+				directory: { type: "string", description: "res:// directory to scan" },
+				recursive: { type: "boolean" },
+			},
+		},
+	},
+	{
+		name: "godot.scene.open",
+		description: "Open a scene and make it the active edited scene.",
+		method: "scene.open",
+		capability: "write_scene",
+		inputSchema: {
+			type: "object",
+			additionalProperties: false,
+			required: ["path"],
+			properties: {
+				path: { type: "string", description: "res:// scene path" },
+			},
+		},
+	},
+	{
+		name: "godot.scene.create",
+		description: "Create a new in-memory scene with a root node type.",
+		method: "scene.create",
+		capability: "write_scene",
+		inputSchema: {
+			type: "object",
+			additionalProperties: false,
+			required: ["root_type"],
+			properties: {
+				root_type: { type: "string", description: "Root node class name" },
+				root_name: { type: "string" },
+			},
+		},
+	},
+	{
+		name: "godot.scene.instantiate",
+		description: "Instantiate a PackedScene under an existing node.",
+		method: "scene.instantiate",
+		capability: "write_scene",
+		inputSchema: {
+			type: "object",
+			additionalProperties: false,
+			required: ["scene_path", "parent_path"],
+			properties: {
+				scene_path: { type: "string", description: "res:// packed scene path" },
+				parent_path: COMMON_PATH_SCHEMA,
+				name: { type: "string" },
+				position: { type: "number" },
+			},
+		},
+	},
+	{
+		name: "godot.node.get_property",
+		description: "Get one node property value with type information.",
+		method: "node.get_property",
+		capability: "read_scene",
+		inputSchema: {
+			type: "object",
+			additionalProperties: false,
+			required: ["node_path", "property_name"],
+			properties: {
+				node_path: COMMON_PATH_SCHEMA,
+				property_name: { type: "string" },
+			},
+		},
+	},
+	{
+		name: "godot.node.list_properties",
+		description: "List discoverable properties on a node.",
+		method: "node.list_properties",
+		capability: "read_scene",
+		inputSchema: {
+			type: "object",
+			additionalProperties: false,
+			required: ["node_path"],
+			properties: {
+				node_path: COMMON_PATH_SCHEMA,
+			},
+		},
+	},
+	{
 		name: "godot.node.get_properties",
 		description: "Get selected node property values by property_names.",
 		method: "node.get_properties",
@@ -417,6 +506,53 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
 		},
 	},
 	{
+		name: "godot.node.find",
+		description: "Search scene nodes by pattern, type, or group.",
+		method: "node.find",
+		capability: "read_scene",
+		inputSchema: {
+			type: "object",
+			additionalProperties: false,
+			properties: {
+				pattern: { type: "string" },
+				type: { type: "string", description: "Node class filter" },
+				group: { type: "string" },
+				limit: { type: "number", minimum: 1 },
+				owned: { type: "boolean" },
+			},
+		},
+	},
+	{
+		name: "godot.node.get_groups",
+		description: "List non-internal groups for a node.",
+		method: "node.get_groups",
+		capability: "read_scene",
+		inputSchema: {
+			type: "object",
+			additionalProperties: false,
+			required: ["node_path"],
+			properties: {
+				node_path: COMMON_PATH_SCHEMA,
+			},
+		},
+	},
+	{
+		name: "godot.node.set_groups",
+		description: "Add or remove groups on a node.",
+		method: "node.set_groups",
+		capability: "write_scene",
+		inputSchema: {
+			type: "object",
+			additionalProperties: false,
+			required: ["node_path"],
+			properties: {
+				node_path: COMMON_PATH_SCHEMA,
+				add: { type: "array", items: { type: "string" } },
+				remove: { type: "array", items: { type: "string" } },
+			},
+		},
+	},
+	{
 		name: "godot.script.get_active",
 		description: "Get script source from the active editor buffer or selected scene node workspace.",
 		method: "script.get_active",
@@ -576,6 +712,37 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
 		},
 	},
 	{
+		name: "godot.resource.get",
+		description: "Inspect serializable properties on a loaded resource.",
+		method: "resource.get",
+		capability: "read_resource",
+		inputSchema: {
+			type: "object",
+			additionalProperties: false,
+			required: ["path"],
+			properties: {
+				path: { type: "string", description: "res:// resource path" },
+				property_names: { type: "array", items: { type: "string" } },
+			},
+		},
+	},
+	{
+		name: "godot.resource.list",
+		description: "List resource files in a directory with filters.",
+		method: "resource.list",
+		capability: "read_resource",
+		inputSchema: {
+			type: "object",
+			additionalProperties: false,
+			properties: {
+				directory: { type: "string", description: "res:// directory to scan" },
+				extensions: { type: "array", items: { type: "string" } },
+				recursive: { type: "boolean" },
+				limit: { type: "number", minimum: 1 },
+			},
+		},
+	},
+	{
 		name: "godot.resource.create",
 		description: "Create new resources (StyleBox, ShaderMaterial, AudioStream, etc.) in memory.",
 		method: "resource.create",
@@ -629,6 +796,173 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
 						},
 					},
 				},
+			},
+		},
+	},
+	{
+		name: "godot.signal.list",
+		description: "List built-in and script-defined signals on a node.",
+		method: "signal.list",
+		capability: "read_scene",
+		inputSchema: {
+			type: "object",
+			additionalProperties: false,
+			required: ["node_path"],
+			properties: {
+				node_path: COMMON_PATH_SCHEMA,
+			},
+		},
+	},
+	{
+		name: "godot.signal.get_connections",
+		description: "Inspect existing signal connections on a node.",
+		method: "signal.get_connections",
+		capability: "read_scene",
+		inputSchema: {
+			type: "object",
+			additionalProperties: false,
+			required: ["node_path"],
+			properties: {
+				node_path: COMMON_PATH_SCHEMA,
+				signal_name: { type: "string" },
+			},
+		},
+	},
+	{
+		name: "godot.signal.connect",
+		description: "Connect a node signal to a target method.",
+		method: "signal.connect",
+		capability: "write_scene",
+		inputSchema: {
+			type: "object",
+			additionalProperties: false,
+			required: ["node_path", "signal_name", "target_path", "method"],
+			properties: {
+				node_path: COMMON_PATH_SCHEMA,
+				signal_name: { type: "string" },
+				target_path: COMMON_PATH_SCHEMA,
+				method: { type: "string" },
+				flags: { type: "number", minimum: 0 },
+			},
+		},
+	},
+	{
+		name: "godot.signal.disconnect",
+		description: "Disconnect a node signal from a target method.",
+		method: "signal.disconnect",
+		capability: "write_scene",
+		inputSchema: {
+			type: "object",
+			additionalProperties: false,
+			required: ["node_path", "signal_name", "target_path", "method"],
+			properties: {
+				node_path: COMMON_PATH_SCHEMA,
+				signal_name: { type: "string" },
+				target_path: COMMON_PATH_SCHEMA,
+				method: { type: "string" },
+			},
+		},
+	},
+	{
+		name: "godot.project.get_setting",
+		description: "Read one or more project settings keys.",
+		method: "project.get_setting",
+		capability: "read_project",
+		inputSchema: {
+			type: "object",
+			additionalProperties: false,
+			required: ["keys"],
+			properties: {
+				keys: { type: "array", minItems: 1, items: { type: "string" } },
+			},
+		},
+	},
+	{
+		name: "godot.project.set_setting",
+		description: "Update project settings and save project.godot.",
+		method: "project.set_setting",
+		capability: "write_project",
+		inputSchema: {
+			type: "object",
+			additionalProperties: false,
+			required: ["settings"],
+			properties: {
+				settings: { type: "object", additionalProperties: true },
+			},
+		},
+	},
+	{
+		name: "godot.editor.get_errors",
+		description: "Read recent Godot editor errors and warnings.",
+		method: "editor.get_errors",
+		capability: "read_project",
+		inputSchema: {
+			type: "object",
+			additionalProperties: false,
+			properties: {
+				types: { type: "array", items: { type: "string", enum: ["error", "warning"] } },
+				limit: { type: "number", minimum: 1 },
+				clear: { type: "boolean" },
+			},
+		},
+	},
+	{
+		name: "godot.shader.get",
+		description: "Read shader source code and metadata.",
+		method: "shader.get",
+		capability: "read_script",
+		inputSchema: {
+			type: "object",
+			additionalProperties: false,
+			required: ["path"],
+			properties: {
+				path: { type: "string", description: "res:// shader path or resource path" },
+			},
+		},
+	},
+	{
+		name: "godot.shader.edit",
+		description: "Replace shader source code with optimistic version checks.",
+		method: "shader.edit",
+		capability: "write_script",
+		inputSchema: {
+			type: "object",
+			additionalProperties: false,
+			required: ["path", "source"],
+			properties: {
+				path: { type: "string", description: "res:// shader path or resource path" },
+				source: { type: "string" },
+				expected_version: { type: "string" },
+			},
+		},
+	},
+	{
+		name: "godot.theme.get_overrides",
+		description: "Inspect theme overrides on a Control node.",
+		method: "theme.get_overrides",
+		capability: "read_scene",
+		inputSchema: {
+			type: "object",
+			additionalProperties: false,
+			required: ["node_path"],
+			properties: {
+				node_path: COMMON_PATH_SCHEMA,
+				override_type: { type: "string", enum: ["colors", "constants", "font_sizes", "fonts", "icons", "styleboxes"] },
+			},
+		},
+	},
+	{
+		name: "godot.theme.set_overrides",
+		description: "Set or remove theme overrides on a Control node.",
+		method: "theme.set_overrides",
+		capability: "write_scene",
+		inputSchema: {
+			type: "object",
+			additionalProperties: false,
+			required: ["node_path", "overrides"],
+			properties: {
+				node_path: COMMON_PATH_SCHEMA,
+				overrides: { type: "object", additionalProperties: true },
 			},
 		},
 	},
