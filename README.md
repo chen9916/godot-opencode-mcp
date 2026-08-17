@@ -1,3 +1,5 @@
+
+
 # Godot OpenCode MCP Fork
 
 This repo is a Godot engine fork focused on built-in MCP workflows for OpenCode.
@@ -6,7 +8,7 @@ It includes:
 - Godot editor-side MCP server under `editor/debugger/opencode_mcp`
 - Expanded MCP tools for scene, node, script, resource, signal, shader, theme, and project operations
 - OpenCode stdio bridge under `misc/opencode_mcp_bridge`
-- OpenCode config installer command that upserts `mcp.godot-opencode`
+- OpenCode config installer command (`npm run install-config` in `misc/opencode_mcp_bridge`) that upserts `mcp.godot-opencode`
 
 ## Quick setup
 
